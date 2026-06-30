@@ -1,5 +1,6 @@
 import { openaiJSON } from "@/lib/openai"
-import { AYA_PERSONA } from "@/lib/persona"
+import { ANYA_PERSONA } from "@/lib/persona"
+import { groundingContext } from "@/lib/context"
 import type { Candidate, Fixture, ScoredTrend, Pulse, TrendType, Safety } from "./types"
 
 const TREND_TYPES: TrendType[] = ["Music", "Visual", "Caption"]
@@ -14,7 +15,7 @@ function clampScore(n: unknown): number {
 type ScoreItem = { i: number; title?: string; type?: string; relevance?: number; safety?: string; note?: string }
 
 /**
- * Score every discovery candidate for fit with Aya's brand in a single LLM call.
+ * Score every discovery candidate for fit with Anya's brand in a single LLM call.
  * Returns scored trends (unranked); the orchestrator sorts + ranks them.
  */
 export async function scoreCandidates(candidates: Candidate[]): Promise<ScoredTrend[]> {
@@ -28,18 +29,22 @@ export async function scoreCandidates(candidates: Candidate[]): Promise<ScoredTr
     metric: c.metric,
   }))
 
+  // Brand docs in the knowledge base sharpen how relevance/safety are judged.
+  const brandContext = await groundingContext({ knowledge: true, pulse: false, trends: false, watchlist: false, knowledgeChars: 2800 })
+
   const system =
-    `You are a cultural trend analyst for ${AYA_PERSONA.name}, ${AYA_PERSONA.summary}\n` +
-    `Audience: ${AYA_PERSONA.audience}\n${AYA_PERSONA.brief}\n\n` +
-    `Brand voice & safety: ${AYA_PERSONA.brandSafety}\n\n` +
-    `Score how well each candidate fits Aya's Mumbai-first music/culture content. Respond with strict JSON only.`
+    `You are a cultural trend analyst for ${ANYA_PERSONA.name}, ${ANYA_PERSONA.summary}\n` +
+    `Audience: ${ANYA_PERSONA.audience}\n${ANYA_PERSONA.brief}\n\n` +
+    `Brand voice & safety: ${ANYA_PERSONA.brandSafety}\n\n` +
+    (brandContext ? `${brandContext}\n\n` : "") +
+    `Score how well each candidate fits Anya's Mumbai-first music/culture content. Respond with strict JSON only.`
 
   const user =
     `Candidates (JSON array):\n${JSON.stringify(list)}\n\n` +
     `Return JSON of the exact form:\n` +
     `{ "items": [ { "i": <candidate index>, "title": <concise cleaned title, <=70 chars>, ` +
-    `"type": "Music" | "Visual" | "Caption", "relevance": <integer 0-100 fit for Aya>, ` +
-    `"safety": "Clear" | "Review" | "Avoid", "note": <why it matters for Aya, <=120 chars> } ] }\n` +
+    `"type": "Music" | "Visual" | "Caption", "relevance": <integer 0-100 fit for Anya>, ` +
+    `"safety": "Clear" | "Review" | "Avoid", "note": <why it matters for Anya, <=120 chars> } ] }\n` +
     `Include every candidate exactly once.`
 
   const out = await openaiJSON<{ items?: ScoreItem[] }>({ system, user, maxTokens: 3500 })
@@ -104,12 +109,15 @@ export async function generatePulse(
       when: f.startsAt,
       india: f.india,
     }))
+    // Knowledge base + watchlist inform the weekly brief.
+    const grounding = await groundingContext({ knowledge: true, watchlist: true, pulse: false, trends: false, knowledgeChars: 3000 })
     const out = await openaiJSON<{ summary?: string; dos?: string[]; donts?: string[] }>({
       system:
-        `You are ${AYA_PERSONA.name}'s weekly "Pulse" strategist. ${AYA_PERSONA.summary}\n` +
-        `Brand safety: ${AYA_PERSONA.brandSafety}\n` +
+        `You are ${ANYA_PERSONA.name}'s weekly "Pulse" strategist. ${ANYA_PERSONA.summary}\n` +
+        `Brand safety: ${ANYA_PERSONA.brandSafety}\n` +
         `Write a sharp, brand-voiced brief. Respond with strict JSON only.`,
       user:
+        (grounding ? `${grounding}\n\n` : "") +
         `This week's top scored trends (JSON):\n${JSON.stringify(top)}\n\n` +
         `Upcoming cricket match-nights (JSON; use for culture-first match-night moments only — ` +
         `never betting/odds/wagering): ${JSON.stringify(matchNights)}\n\n` +
@@ -127,7 +135,7 @@ export async function generatePulse(
 
   return {
     id: `r-${now.toISOString().slice(0, 10)}`,
-    title: `Aya Pulse — Week ${week}`,
+    title: `Anya Pulse — Week ${week}`,
     date: dateLabel,
     status: "Ready",
     relevance,

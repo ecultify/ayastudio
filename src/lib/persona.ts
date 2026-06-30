@@ -1,9 +1,12 @@
-// Aya's brand persona + content strategy. This is configuration (the client's
-// real brief), not fetched data — it drives the LLM scoring/Pulse prompts and
-// the dashboard's content-pillars panel.
+// Anya Mehra's brand persona + content strategy. This is configuration (the
+// client's real brief), not fetched data — it drives the LLM scoring/Pulse
+// prompts and the dashboard's content-pillars panel. The knowledge base and
+// Pulse reports layer on top of this to further shape Anya's voice (see
+// src/lib/context.ts).
 
-export const AYA_PERSONA = {
-  name: "Aya",
+export const ANYA_PERSONA = {
+  name: "Anya Mehra",
+  shortName: "Anya",
   summary:
     "a Mumbai-based AI music artist — a DJ/producer influencer. Culture-first, premium, witty, recognisably Mumbai. Her world is sound, nightlife, studio craft, monsoon-city aesthetics, and South-Asian global music identity.",
   audience: "Gen-Z and young-millennial music & culture audiences in Mumbai / India and the South-Asian diaspora.",
@@ -19,6 +22,9 @@ export const AYA_PERSONA = {
     'Mark such items "Review" (borderline / needs a human) or "Avoid" (off-brand / unsafe).',
   ].join(" "),
 } as const
+
+// Backwards-compatible alias (the brand was previously "Aya").
+export const AYA_PERSONA = ANYA_PERSONA
 
 // The brand's monthly content pillars (configured strategy, shown on the dashboard).
 export const CONTENT_PILLARS = [

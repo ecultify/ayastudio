@@ -59,7 +59,7 @@ export function getSourceStatuses(): SourceStatus[] {
   ]
 }
 
-// The creators Aya benchmarks against. Real config (not fetched data); editable
+// The creators Anya benchmarks against. Real config (not fetched data); editable
 // persistence can come with the DB later.
 export const WATCHLIST = [
   { handle: "@kayan.a", name: "Kayan / Ambika Nayak", note: "Mumbai producer-DJ + fashion", followers: "—" },

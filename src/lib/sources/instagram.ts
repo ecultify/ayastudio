@@ -1,7 +1,7 @@
 import { env } from "@/lib/env"
 import type { Candidate } from "@/lib/scan/types"
 
-// Apify Instagram Hashtag Scraper. Surfaces recent reels/posts from Aya's
+// Apify Instagram Hashtag Scraper. Surfaces recent reels/posts from Anya's
 // scene-relevant hashtags as discovery candidates (visual + caption trends).
 // The actor runs synchronously and Instagram scraping is slow + credit-costing,
 // so results are cached in module memory for longer than the main scan TTL.
@@ -54,7 +54,7 @@ function titleFor(p: ApifyPost): string {
   return p.ownerUsername ? `@${p.ownerUsername} reel` : "Instagram reel"
 }
 
-/** Discover recent Instagram reels across Aya's hashtags via Apify. */
+/** Discover recent Instagram reels across Anya's hashtags via Apify. */
 export async function fetchInstagramTrending(): Promise<Candidate[]> {
   const token = env.apifyToken()
   if (!token) return [] // not configured — silently skip

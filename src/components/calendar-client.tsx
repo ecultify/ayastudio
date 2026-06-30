@@ -14,7 +14,6 @@ type CalEvent = {
   status: string
 }
 
-const STORAGE_KEY = "aya-calendar-events"
 const FORMATS = ["Reel", "Carousel", "Static"]
 const STATUSES = ["Planned", "Draft", "Needs ref"]
 const PILLARS = [
@@ -44,26 +43,22 @@ export function CalendarClient() {
   }, [])
 
   const [events, setEvents] = useState<CalEvent[]>([])
-  const [loaded, setLoaded] = useState(false)
   const [cursor, setCursor] = useState(() => new Date())
   const [editing, setEditing] = useState<CalEvent | null>(null)
   const [generating, setGenerating] = useState(false)
   const [dragId, setDragId] = useState<string | null>(null)
 
-  // Load persisted events (client-only; no DB yet).
+  // Load persisted events from the database.
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY)
-      if (raw) setEvents(JSON.parse(raw))
-    } catch {
-      /* ignore */
-    }
-    setLoaded(true)
+    fetch("/api/calendar", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => {
+        if (Array.isArray(d.events)) setEvents(d.events)
+      })
+      .catch(() => {
+        /* ignore */
+      })
   }, [])
-
-  useEffect(() => {
-    if (loaded) localStorage.setItem(STORAGE_KEY, JSON.stringify(events))
-  }, [events, loaded])
 
   const monthStart = new Date(cursor.getFullYear(), cursor.getMonth(), 1)
   const daysInMonth = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0).getDate()
@@ -80,6 +75,14 @@ export function CalendarClient() {
 
   const monthLabel = cursor.toLocaleDateString("en-GB", { month: "long", year: "numeric" })
 
+  function persist(ev: CalEvent) {
+    fetch("/api/calendar", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ event: ev }),
+    }).catch(() => {})
+  }
+
   function upsert(ev: CalEvent) {
     setEvents((list) => {
       const idx = list.findIndex((e) => e.id === ev.id)
@@ -90,9 +93,19 @@ export function CalendarClient() {
       }
       return [...list, ev]
     })
+    persist(ev)
   }
-  const remove = (id: string) => setEvents((l) => l.filter((e) => e.id !== id))
-  const move = (id: string, date: string) => setEvents((l) => l.map((e) => (e.id === id ? { ...e, date } : e)))
+  const remove = (id: string) => {
+    setEvents((l) => l.filter((e) => e.id !== id))
+    fetch(`/api/calendar?id=${id}`, { method: "DELETE" }).catch(() => {})
+  }
+  const move = (id: string, date: string) =>
+    setEvents((l) => {
+      const next = l.map((e) => (e.id === id ? { ...e, date } : e))
+      const moved = next.find((e) => e.id === id)
+      if (moved) persist(moved)
+      return next
+    })
 
   async function generate() {
     setGenerating(true)
@@ -112,6 +125,13 @@ export function CalendarClient() {
       }))
       setEvents((l) => [...l, ...created])
       setCursor(new Date())
+      if (created.length) {
+        fetch("/api/calendar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ events: created }),
+        }).catch(() => {})
+      }
     } catch (e) {
       alert("Generate failed: " + (e as Error).message)
     } finally {

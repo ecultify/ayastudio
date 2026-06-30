@@ -25,7 +25,7 @@ async function getToken(): Promise<string> {
 
 // Spotify deprecated /browse/new-releases for client-credentials apps (403), and
 // development-mode apps don't get the `popularity` field — but /search works and
-// returns album.release_date. These seeds map to Aya's content pillars; results
+// returns album.release_date. These seeds map to Anya's content pillars; results
 // are ordered by recency (most recently released first).
 const SEED_QUERIES = ["bollywood", "punjabi", "indie india", "desi hip hop", "afro house", "amapiano"]
 
@@ -37,7 +37,7 @@ type SpotifyTrack = {
   album?: { release_date?: string; release_date_precision?: string }
 }
 
-/** Discover recent tracks across Aya's scenes via Spotify search. */
+/** Discover recent tracks across Anya's scenes via Spotify search. */
 export async function fetchSpotifyTrending(): Promise<Candidate[]> {
   const t = await getToken()
 

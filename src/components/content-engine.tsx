@@ -14,7 +14,7 @@ type Idea = { pillar: string; format: string; hook: string; platform: string; re
 export function ContentEngine() {
   const [platform, setPlatform] = useState<"Instagram" | "YouTube">("Instagram")
   const [pillar, setPillar] = useState<string | null>(null)
-  const [brief, setBrief] = useState("A launch reel introducing Aya in her Bandra studio. Witty, music-first, under 15s.")
+  const [brief, setBrief] = useState("A launch reel introducing Anya in her Bandra studio. Witty, music-first, under 15s.")
   const [ideas, setIdeas] = useState<Idea[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -83,7 +83,7 @@ export function ContentEngine() {
               value={brief}
               onChange={(e) => setBrief(e.target.value)}
               className="border-input placeholder:text-muted-foreground focus-visible:ring-ring/30 min-h-24 w-full rounded-md border bg-card px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
-              placeholder="e.g. a launch reel that introduces Aya as a Mumbai DJ, witty and music-first…"
+              placeholder="e.g. a launch reel that introduces Anya as a Mumbai DJ, witty and music-first…"
             />
           </div>
           <Button className="w-full" onClick={generate} disabled={loading}>

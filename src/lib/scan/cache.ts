@@ -1,27 +1,59 @@
 import { runScan } from "./run"
 import { generatePulse } from "./score"
+import { saveScanState, loadScanState, saveReport } from "@/lib/db/scan-store"
 import type { Kpi, ScanResult } from "./types"
 
-// In-memory scan cache. There is no DB yet, so the latest scan lives in module
-// memory with a TTL; server actions invalidate it explicitly. `previous` is kept
-// only to compute week-over-week-style KPI deltas and the "days since" banner.
-const TTL_MS = 1000 * 60 * 60 * 3 // 3 hours
+// Scan cache. The latest scan lives in module memory (with a TTL) and is also
+// persisted to Postgres so it survives restarts. Unlike before, reads do NOT
+// auto-trigger a scan — the dashboard is "ask first": a scan only runs when the
+// user explicitly hits Refresh scan / New Pulse. `previous` is kept to compute
+// week-over-week KPI deltas and the "days since" banner.
 
 let current: ScanResult | null = null
 let previous: ScanResult | null = null
 let inflight: Promise<ScanResult> | null = null
 
-function isFresh(r: ScanResult | null): r is ScanResult {
-  return !!r && Date.now() - new Date(r.generatedAt).getTime() < TTL_MS
+/** An idle, empty scan used before the user has run their first scan. */
+export function emptyScan(): ScanResult {
+  return {
+    generatedAt: new Date(0).toISOString(),
+    trends: [],
+    pulse: null,
+    kpis: [
+      { label: "Signals scanned", value: "—", sub: "run a scan" },
+      { label: "Trends surfaced", value: "—", sub: "after scoring" },
+      { label: "Mumbai relevance", value: "—", sub: "avg score /100" },
+      { label: "Brand-safety flags", value: "—", sub: "needs review" },
+    ],
+    scannedCount: 0,
+    fixtures: [],
+    warnings: [],
+    idle: true,
+  }
 }
 
-/** Get the cached scan, running one (deduped across concurrent callers) if stale. */
-export async function getScan(): Promise<ScanResult> {
-  if (isFresh(current)) return current
+/**
+ * Return the latest scan WITHOUT triggering a new one: in-memory if present,
+ * else the persisted snapshot from the DB, else null. Used by all pages so
+ * nothing scans automatically.
+ */
+export async function peekScan(): Promise<ScanResult | null> {
+  if (current) return current
+  const stored = await loadScanState()
+  if (stored) {
+    current = stored
+    return current
+  }
+  return null
+}
+
+/** Force a brand-new scan (Refresh scan action). Persists + records a report. */
+export async function refreshScan(): Promise<ScanResult> {
   if (inflight) return inflight
   inflight = runScan()
-    .then((r) => {
+    .then(async (r) => {
       commit(r)
+      await persist(current as ScanResult)
       return current as ScanResult
     })
     .finally(() => {
@@ -30,22 +62,20 @@ export async function getScan(): Promise<ScanResult> {
   return inflight
 }
 
-/** Force a brand-new scan (Refresh scan action). */
-export async function refreshScan(): Promise<ScanResult> {
-  inflight = null
-  const r = await runScan()
-  commit(r)
-  return current as ScanResult
-}
-
 /** Regenerate only the Pulse from the current trend set (New Pulse action). */
 export async function regeneratePulse(): Promise<ScanResult> {
-  if (!current || current.trends.length === 0) return refreshScan()
+  const base = await peekScan()
+  if (!base || base.trends.length === 0) return refreshScan()
   const now = new Date()
-  const pulse = await generatePulse(current.trends, now, current.fixtures)
-  const prevPulseAt = current.pulse ? current.generatedAt : current.previousPulseAt
-  current = { ...current, pulse, generatedAt: now.toISOString(), previousPulseAt: prevPulseAt }
+  const pulse = await generatePulse(base.trends, now, base.fixtures)
+  const prevPulseAt = base.pulse ? base.generatedAt : base.previousPulseAt
+  current = { ...base, pulse, generatedAt: now.toISOString(), previousPulseAt: prevPulseAt, idle: false }
+  await persist(current)
   return current
+}
+
+async function persist(scan: ScanResult): Promise<void> {
+  await Promise.all([saveScanState(scan), saveReport(scan)])
 }
 
 /** Store a new scan as current, rolling the old one into `previous` for deltas. */
@@ -53,6 +83,7 @@ function commit(r: ScanResult): void {
   previous = current
   current = {
     ...r,
+    idle: false,
     kpis: withDeltas(r.kpis, previous?.kpis),
     previousPulseAt: previous?.pulse ? previous.generatedAt : previous?.previousPulseAt,
   }

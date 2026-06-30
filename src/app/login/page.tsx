@@ -9,7 +9,7 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         <div className="mb-8 flex flex-col items-center text-center">
           <div className="bg-primary text-primary-foreground mb-4 flex size-11 items-center justify-center rounded-xl"><Radio className="size-5" /></div>
-          <h1 className="font-serif text-2xl font-medium">Aya Studio</h1>
+          <h1 className="font-serif text-2xl font-medium">Anya Studio</h1>
           <p className="text-muted-foreground mt-1 text-sm">Culture radar & content engine</p>
         </div>
         <div className="bg-card space-y-4 rounded-xl border p-6 shadow-xs">

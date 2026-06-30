@@ -2,10 +2,11 @@ import { CalendarClock } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { PageHeader } from "@/components/page-header"
 import { Page } from "@/components/page"
-import { getSourceStatuses, WATCHLIST } from "@/lib/sources/status"
+import { getSourceStatuses } from "@/lib/sources/status"
+import { listWatchlist } from "@/lib/db/watchlist-store"
+import { WatchlistEditor } from "@/components/watchlist-editor"
 
 export const dynamic = "force-dynamic"
 
@@ -15,8 +16,9 @@ function statusVariant(s: string): "success" | "warning" | "danger" {
   return "danger"
 }
 
-export default function SettingsPage() {
+export default async function SettingsPage() {
   const sources = getSourceStatuses()
+  const creators = await listWatchlist()
 
   return (
     <Page>
@@ -41,23 +43,9 @@ export default function SettingsPage() {
       </Card>
 
       <Card>
-        <CardHeader className="flex-row items-center justify-between">
-          <CardTitle>Creator watchlist</CardTitle>
-          <Button variant="outline" size="sm">Add creator</Button>
-        </CardHeader>
+        <CardHeader><CardTitle>Creator watchlist</CardTitle></CardHeader>
         <CardContent className="pt-0">
-          <div className="grid gap-3 sm:grid-cols-2">
-            {WATCHLIST.map((w) => (
-              <div key={w.handle} className="bg-muted/40 flex items-center gap-3 rounded-lg border p-3">
-                <Avatar className="border"><AvatarFallback>{w.name.slice(0, 2).toUpperCase()}</AvatarFallback></Avatar>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{w.name}</p>
-                  <p className="text-muted-foreground truncate text-xs">{w.handle} · {w.note}</p>
-                </div>
-                {w.followers !== "—" && <span className="text-muted-foreground text-xs tabular-nums">{w.followers}</span>}
-              </div>
-            ))}
-          </div>
+          <WatchlistEditor initial={creators} />
         </CardContent>
       </Card>
 

@@ -6,7 +6,6 @@ import { LayoutDashboard, TrendingUp, FileText, Sparkles, CalendarDays, Messages
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
@@ -26,7 +25,7 @@ const groups = [
   { label: "Create", items: [
     { href: "/content", label: "Content Engine", icon: Sparkles },
     { href: "/calendar", label: "Calendar", icon: CalendarDays },
-    { href: "/chat", label: "Ask Aya", icon: MessagesSquare },
+    { href: "/chat", label: "Ask Anya", icon: MessagesSquare },
   ]},
   { label: "Library", items: [
     { href: "/knowledge", label: "Knowledge Base", icon: Library },
@@ -50,7 +49,7 @@ export function AppSidebar() {
           </div>
           {!collapsed && (
             <div className="leading-tight">
-              <div className="text-sm font-semibold">Aya Studio</div>
+              <div className="text-sm font-semibold">Anya Studio</div>
               <div className="text-muted-foreground text-[10px] tracking-wide uppercase">Culture Radar</div>
             </div>
           )}
@@ -81,17 +80,6 @@ export function AppSidebar() {
           </SidebarGroup>
         ))}
       </SidebarContent>
-      <SidebarFooter>
-        {!collapsed && (
-          <div className="bg-card rounded-lg border p-3">
-            <div className="flex items-center gap-2">
-              <span className="bg-primary inline-flex size-2 rounded-full" />
-              <span className="text-xs font-medium">Pipeline healthy</span>
-            </div>
-            <p className="text-muted-foreground mt-1 text-[11px]">Live · YouTube + Spotify + OpenAI</p>
-          </div>
-        )}
-      </SidebarFooter>
     </Sidebar>
   )
 }

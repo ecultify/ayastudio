@@ -78,4 +78,6 @@ export type ScanResult = {
   warnings: string[]
   /** ISO timestamp of the previous pulse, if one was generated before. */
   previousPulseAt?: string
+  /** True for the placeholder scan shown before the user runs their first scan. */
+  idle?: boolean
 }

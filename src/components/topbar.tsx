@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { Search } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -17,9 +18,9 @@ export function Topbar() {
         <Input placeholder="Search trends, sounds, creators…" className="h-9 pl-9" />
       </div>
       <div className="ml-auto flex items-center gap-3">
-        <Button size="sm">Generate report</Button>
+        <Button size="sm" asChild><Link href="/reports">Generate report</Link></Button>
         <Avatar className="size-8 border">
-          <AvatarFallback>AR</AvatarFallback>
+          <AvatarFallback>AM</AvatarFallback>
         </Avatar>
       </div>
     </header>

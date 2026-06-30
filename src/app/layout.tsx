@@ -13,9 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Aya Studio — Culture Radar & Content Engine",
+  title: "Anya Studio — Culture Radar & Content Engine",
   description:
-    "Daily trend intelligence and content direction for Aya Mehra, the AI music creator.",
+    "Daily trend intelligence and content direction for Anya Mehra, the AI music creator.",
 };
 
 export default function RootLayout({

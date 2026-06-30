@@ -5,7 +5,7 @@ import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { PageHeader } from "@/components/page-header"
 import { Page } from "@/components/page"
-import { getScan } from "@/lib/scan/cache"
+import { peekScan, emptyScan } from "@/lib/scan/cache"
 import type { Trend } from "@/lib/scan/types"
 
 export const dynamic = "force-dynamic"
@@ -73,7 +73,7 @@ function TrendTable({ rows }: { rows: Trend[] }) {
 }
 
 export default async function TrendsPage() {
-  const scan = await getScan()
+  const scan = (await peekScan()) ?? emptyScan()
   const trends = scan.trends
   const by = (type: string) => trends.filter((t) => t.type === type)
   return (

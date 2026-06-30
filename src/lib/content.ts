@@ -1,6 +1,7 @@
 import { openaiJSON } from "@/lib/openai"
-import { AYA_PERSONA, CONTENT_PILLARS } from "@/lib/persona"
-import { getScan } from "@/lib/scan/cache"
+import { ANYA_PERSONA, CONTENT_PILLARS } from "@/lib/persona"
+import { peekScan } from "@/lib/scan/cache"
+import { groundingContext } from "@/lib/context"
 
 export type ContentIdea = {
   pillar: string
@@ -22,7 +23,8 @@ export type PlanPost = {
 const PILLAR_NAMES = CONTENT_PILLARS.map((p) => p.name)
 
 async function topTrends(limit: number) {
-  const scan = await getScan()
+  const scan = await peekScan()
+  if (!scan) return []
   return scan.trends.slice(0, limit).map((t) => ({ title: t.title, type: t.type, relevance: t.relevance, platform: t.platform }))
 }
 
@@ -35,12 +37,14 @@ export async function generateContentIdeas(opts: {
 }): Promise<ContentIdea[]> {
   const trends = await topTrends(15)
   const count = opts.count ?? 4
+  const grounding = await groundingContext({ trends: false, knowledgeChars: 4000 })
 
   const out = await openaiJSON<{ ideas?: ContentIdea[] }>({
     system:
-      `You are ${AYA_PERSONA.name}'s content director. ${AYA_PERSONA.summary}\n${AYA_PERSONA.brief}\n` +
-      `Brand safety: ${AYA_PERSONA.brandSafety}\nRespond with strict JSON only.`,
+      `You are ${ANYA_PERSONA.name}'s content director. ${ANYA_PERSONA.summary}\n${ANYA_PERSONA.brief}\n` +
+      `Brand safety: ${ANYA_PERSONA.brandSafety}\nRespond with strict JSON only.`,
     user:
+      (grounding ? `${grounding}\n\n` : "") +
       `This week's live trends (JSON):\n${JSON.stringify(trends)}\n\n` +
       `Platform: ${opts.platform}\n` +
       (opts.pillar ? `Pillar focus: ${opts.pillar}\n` : `Pillars: ${PILLAR_NAMES.join(", ")}\n`) +
@@ -68,12 +72,14 @@ export async function generateContentIdeas(opts: {
 /** Generate an initial ~2-week content plan from live trends + pillars (for the calendar). */
 export async function generateContentPlan(count = 10): Promise<PlanPost[]> {
   const trends = await topTrends(12)
+  const grounding = await groundingContext({ trends: false, knowledgeChars: 3500 })
 
   const out = await openaiJSON<{ posts?: PlanPost[] }>({
     system:
-      `You are ${AYA_PERSONA.name}'s social media planner. ${AYA_PERSONA.summary}\n${AYA_PERSONA.brief}\n` +
-      `Brand safety: ${AYA_PERSONA.brandSafety}\nRespond with strict JSON only.`,
+      `You are ${ANYA_PERSONA.name}'s social media planner. ${ANYA_PERSONA.summary}\n${ANYA_PERSONA.brief}\n` +
+      `Brand safety: ${ANYA_PERSONA.brandSafety}\nRespond with strict JSON only.`,
     user:
+      (grounding ? `${grounding}\n\n` : "") +
       `This week's live trends (JSON):\n${JSON.stringify(trends)}\n\n` +
       `Plan ${count} posts across the next 14 days, spread out (not all on one day), mapped to the pillars: ${PILLAR_NAMES.join(", ")}.\n` +
       `Return JSON: { "posts": [ { "title": <short post title, <=60 chars>, "format": "Reel" | "Carousel" | "Static", ` +

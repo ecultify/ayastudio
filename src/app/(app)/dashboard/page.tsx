@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { ArrowUpRight, Clock, Music, Image as ImageIcon, Type, ShieldAlert, AlertTriangle } from "lucide-react"
+import { ArrowUpRight, Clock, Music, Image as ImageIcon, Type, ShieldAlert, AlertTriangle, Radar } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -8,11 +8,12 @@ import { Separator } from "@/components/ui/separator"
 import { PageHeader } from "@/components/page-header"
 import { Page } from "@/components/page"
 import { ScanActions, RegenerateButton } from "@/components/scan-actions"
-import { getScan } from "@/lib/scan/cache"
+import { peekScan, emptyScan } from "@/lib/scan/cache"
 import { CONTENT_PILLARS } from "@/lib/persona"
 import { formatIST, daysSince } from "@/lib/format"
 
-// Live data per request; the scan itself is cached in module memory.
+// Live data per request. Reads the latest scan WITHOUT auto-running one — the
+// radar is "ask first": a scan only runs when the user clicks Refresh scan.
 export const dynamic = "force-dynamic"
 
 function SafetyBadge({ s }: { s: string }) {
@@ -26,16 +27,39 @@ function typeIcon(t: string) {
 }
 
 export default async function DashboardPage() {
-  const scan = await getScan()
+  const scan = (await peekScan()) ?? emptyScan()
+  const idle = scan.idle === true
   const top = scan.trends.slice(0, 6)
   const pulse = scan.pulse
   const sinceDays = scan.previousPulseAt ? daysSince(scan.previousPulseAt) : null
 
   return (
     <Page>
-      <PageHeader title="Dashboard" subtitle={`Aya's culture radar · refreshed ${formatIST(scan.generatedAt)}`}>
+      <PageHeader
+        title="Dashboard"
+        subtitle={idle ? "Anya's culture radar · idle — run a scan to begin" : `Anya's culture radar · refreshed ${formatIST(scan.generatedAt)}`}
+      >
         <ScanActions />
       </PageHeader>
+
+      {idle && (
+        <Card className="border-primary/30 bg-primary/5">
+          <CardContent className="flex flex-col items-center gap-4 py-12 text-center">
+            <div className="bg-primary text-primary-foreground flex size-12 items-center justify-center rounded-xl">
+              <Radar className="size-6" />
+            </div>
+            <div className="max-w-md">
+              <p className="text-base font-semibold">Anya&apos;s radar is idle</p>
+              <p className="text-muted-foreground mt-1 text-sm">
+                Nothing runs automatically. Hit <span className="font-medium">Refresh scan</span> to pull live signals
+                from YouTube, Spotify &amp; Instagram, score them against Anya&apos;s brand and knowledge base, then
+                <span className="font-medium"> New Pulse</span> to generate this week&apos;s report.
+              </p>
+            </div>
+            <ScanActions />
+          </CardContent>
+        </Card>
+      )}
 
       {scan.warnings.length > 0 && (
         <Card className="border-amber-200 bg-amber-50/60">

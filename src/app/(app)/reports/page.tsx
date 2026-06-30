@@ -5,7 +5,9 @@ import { Separator } from "@/components/ui/separator"
 import { PageHeader } from "@/components/page-header"
 import { Page } from "@/components/page"
 import { PrintButton } from "@/components/print-button"
-import { getScan } from "@/lib/scan/cache"
+import { peekScan, emptyScan } from "@/lib/scan/cache"
+import { listReports } from "@/lib/db/scan-store"
+import { formatIST } from "@/lib/format"
 
 export const dynamic = "force-dynamic"
 
@@ -22,10 +24,11 @@ function fixtureWhen(iso: string): string {
 }
 
 export default async function ReportsPage() {
-  const scan = await getScan()
+  const scan = (await peekScan()) ?? emptyScan()
   const pulse = scan.pulse
   const trends = scan.trends
   const fixtures = scan.fixtures ?? []
+  const history = await listReports()
 
   const sections = [
     { title: "Top music trends", icon: Music, items: trends.filter((t) => t.type === "Music").slice(0, 5) },
@@ -140,8 +143,28 @@ export default async function ReportsPage() {
         </CardContent>
       </Card>
 
+      {history.length > 1 && (
+        <Card>
+          <CardHeader className="border-b pb-4"><CardTitle className="text-base tracking-tight">Report history</CardTitle></CardHeader>
+          <CardContent className="pt-2">
+            <ul className="divide-y">
+              {history.map((r) => (
+                <li key={r.id} className="flex items-center gap-3 py-2.5 text-sm">
+                  <span className="min-w-0 flex-1 truncate">
+                    <span className="font-medium">{r.title}</span>
+                    <span className="text-muted-foreground"> · {r.date}</span>
+                  </span>
+                  <span className="text-muted-foreground shrink-0 text-xs tabular-nums">rel {r.relevance}/100</span>
+                  <span className="text-muted-foreground hidden shrink-0 text-xs sm:inline">{formatIST(r.generatedAt)}</span>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
+
       <p className="text-muted-foreground text-xs">
-        Showing the current live Pulse. Report history (week-over-week) becomes available once a database is connected.
+        Generated from the live signal scan. Each new Pulse is saved to history above.
       </p>
     </Page>
   )
