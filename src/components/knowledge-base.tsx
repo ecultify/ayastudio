@@ -89,6 +89,7 @@ function makeThumb(file: File): Promise<string | undefined> {
   })
 }
 
+
 export function KnowledgeBase() {
   const [folders, setFolders] = useState<ServerFolder[]>([])
   const [files, setFiles] = useState<ServerFile[]>([])
